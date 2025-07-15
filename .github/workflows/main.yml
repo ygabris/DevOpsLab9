@@ -1,0 +1,86 @@
+name: Build and Deploy DevOps Lab 10
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  APP_NAME: devopslab10
+
+jobs:
+  build:
+    name: Build and Upload Artifact
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Generate artifact
+        run: |
+          echo "<!-- Built: $(date) -->" >> index.html
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}
+          path: ./
+
+  deploy_dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: development
+      url: https://dev.${{ env.APP_NAME }}.com
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}
+
+      - name: Simulate development Deployment
+        run: |
+          echo "Simulating Deploying to DEVELOPMENT via SSH: https://dev.${{ env.APP_NAME }}.com"
+          cat index.html
+
+  deploy_staging:
+    name: Promote to Staging
+    runs-on: ubuntu-latest
+    needs: deploy_dev
+    environment:
+      name: staging
+      url: https://staging.${{ env.APP_NAME }}.com
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}
+
+      - name: Simulate staging Deployment
+        run: |
+          echo "Simulating Deploying to STAGING via SSH: https://staging.${{ env.APP_NAME }}.com"
+          cat index.html
+
+  deploy_prod:
+    name: Promote to Production
+    runs-on: ubuntu-latest
+    needs: deploy_staging
+    environment:
+      name: production
+      url: https://${{ env.APP_NAME }}.com
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}
+
+      - name: Simulate production Deployment
+        run: |
+          echo "Simulating Deploying to PRODUCTION via SSH: https://${{ env.APP_NAME }}.com"
+          cat index.html
